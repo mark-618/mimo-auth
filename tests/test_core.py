@@ -630,6 +630,40 @@ def test_check_single_profile_success(tmp_path, capsys, monkeypatch):
     assert "sk-demo-lab-abcd" not in output
 
 
+def test_check_uses_profile_default_model_when_not_overridden(tmp_path, capsys, monkeypatch):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(json.dumps({"env": {}}), encoding="utf-8")
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+    run(
+        common_args
+        + [
+            "add-api",
+            "lab",
+            "--api-key",
+            "sk-demo-lab-abcd",
+            "--default-model",
+            "mimo-v2-flash",
+        ]
+    )
+    capsys.readouterr()
+    seen_models = []
+
+    def fake_check(profile, *, model, timeout):
+        seen_models.append(model)
+        return CheckResult(True, 200, "OK")
+
+    monkeypatch.setattr("mimo_auth.cli.check_profile", fake_check)
+
+    assert run(common_args + ["check", "lab"]) == 0
+    assert seen_models == ["mimo-v2-flash"]
+
+
 def test_color_output_can_be_forced_or_disabled(tmp_path, capsys, monkeypatch):
     store_path = tmp_path / "profiles.json"
     settings_path = tmp_path / "settings.json"

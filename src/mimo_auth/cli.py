@@ -159,8 +159,7 @@ def build_parser() -> argparse.ArgumentParser:
     check_parser.add_argument("alias", nargs="?")
     check_parser.add_argument(
         "--model",
-        default=DEFAULT_MODEL,
-        help=f"Model used for the test call. Defaults to {DEFAULT_MODEL}.",
+        help="Model used for the test call. Defaults to each profile's default_model.",
     )
     check_parser.add_argument(
         "--timeout",
@@ -627,7 +626,11 @@ def command_check(args: argparse.Namespace, store: ProfileStore) -> int:
             f"{style(mask_api_key(profile.api_key), 'yellow')}) ...",
             flush=True,
         )
-        result = check_profile(profile, model=args.model, timeout=args.timeout)
+        result = check_profile(
+            profile,
+            model=args.model or profile.default_model,
+            timeout=args.timeout,
+        )
         if result.ok:
             print(f"  {style('OK', 'green')}")
         else:

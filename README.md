@@ -146,9 +146,10 @@ Test whether stored credentials can call MiMo:
 ```bash
 mimo-auth check
 mimo-auth check me-plan
+mimo-auth check me-plan --model mimo-v2.5-pro
 ```
 
-`check` sends a minimal real API request only when you run it. It may consume a tiny amount of quota. Failed checks include a short explanation:
+`check` sends a minimal real API request only when you run it. By default it uses each profile's saved `default_model`; pass `--model` to override it. It may consume a tiny amount of quota. Failed checks include a short explanation:
 
 ```text
 Checking me-plan (token-plan, tp-****abcd) ...
