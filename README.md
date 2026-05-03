@@ -65,10 +65,24 @@ Profiles are stored locally at:
 
 The profile store is written with file mode `0600`.
 
-## Install From Source
+## Install
+
+Recommended CLI install:
 
 ```bash
-git clone <your-fork-or-repo-url>
+pipx install git+https://github.com/mark-618/mimo-auth.git
+```
+
+Upgrade later:
+
+```bash
+pipx upgrade mimo-auth
+```
+
+Install from source for development:
+
+```bash
+git clone https://github.com/mark-618/mimo-auth.git
 cd mimo-auth
 python -m pip install -e .
 ```
@@ -288,6 +302,8 @@ Each profile contains:
 - `mimo-auth check` never prints the full API key, even when the request fails.
 
 ## Development
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the local development flow, PR expectations, and issue reporting checklist.
 
 Install with test dependencies:
 
