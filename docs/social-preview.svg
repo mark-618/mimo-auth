@@ -3,31 +3,55 @@
   <desc id="desc">Xiaomi MiMo profile switcher for Claude Code. Local only, no telemetry, no proxy.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0f172a"/>
-      <stop offset="0.55" stop-color="#1e293b"/>
-      <stop offset="1" stop-color="#14532d"/>
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="0.56" stop-color="#162032"/>
+      <stop offset="1" stop-color="#064e3b"/>
     </linearGradient>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#22c55e"/>
       <stop offset="1" stop-color="#38bdf8"/>
     </linearGradient>
   </defs>
+
   <rect width="1280" height="640" fill="url(#bg)"/>
-  <rect x="72" y="72" width="1136" height="496" rx="28" fill="#020617" opacity="0.72"/>
-  <rect x="72" y="72" width="1136" height="496" rx="28" fill="none" stroke="#334155" stroke-width="2"/>
-  <circle cx="118" cy="116" r="9" fill="#ef4444"/>
-  <circle cx="148" cy="116" r="9" fill="#f59e0b"/>
-  <circle cx="178" cy="116" r="9" fill="#22c55e"/>
-  <text x="104" y="230" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="82" font-weight="800">mimo-auth</text>
-  <rect x="104" y="262" width="430" height="8" rx="4" fill="url(#accent)"/>
-  <text x="104" y="340" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="600">Xiaomi MiMo profile switcher for Claude Code</text>
-  <text x="104" y="420" fill="#94a3b8" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28">Local only  •  No telemetry  •  No proxy  •  Masked keys</text>
-  <g transform="translate(780 176)">
-    <rect x="0" y="0" width="344" height="288" rx="18" fill="#0f172a" stroke="#334155" stroke-width="2"/>
-    <text x="32" y="62" fill="#22c55e" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="24">$ mimo-auth switch</text>
-    <text x="32" y="112" fill="#e2e8f0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="21">1  work-plan</text>
-    <text x="32" y="150" fill="#e2e8f0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="21">2  personal-api</text>
-    <text x="32" y="198" fill="#38bdf8" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="21">Claude Code now uses</text>
-    <text x="32" y="236" fill="#facc15" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="21">tp-****abcd</text>
+  <rect x="64" y="64" width="1152" height="512" rx="30" fill="#020617" opacity="0.74"/>
+  <rect x="64" y="64" width="1152" height="512" rx="30" fill="none" stroke="#334155" stroke-width="2"/>
+
+  <circle cx="112" cy="108" r="9" fill="#ef4444"/>
+  <circle cx="142" cy="108" r="9" fill="#f59e0b"/>
+  <circle cx="172" cy="108" r="9" fill="#22c55e"/>
+
+  <text x="104" y="205" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="86" font-weight="800">mimo-auth</text>
+  <rect x="104" y="236" width="372" height="8" rx="4" fill="url(#accent)"/>
+
+  <text x="104" y="300" fill="#dbeafe" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="650">Xiaomi MiMo profile switcher</text>
+  <text x="104" y="344" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="650">for Claude Code</text>
+
+  <g transform="translate(104 386)">
+    <rect x="0" y="0" width="138" height="42" rx="21" fill="#064e3b"/>
+    <text x="26" y="28" fill="#bbf7d0" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="19" font-weight="700">Local only</text>
+
+    <rect x="158" y="0" width="158" height="42" rx="21" fill="#1e293b"/>
+    <text x="185" y="28" fill="#bae6fd" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="19" font-weight="700">No telemetry</text>
+
+    <rect x="0" y="58" width="124" height="42" rx="21" fill="#1e293b"/>
+    <text x="29" y="86" fill="#bae6fd" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="19" font-weight="700">No proxy</text>
+
+    <rect x="144" y="58" width="150" height="42" rx="21" fill="#422006"/>
+    <text x="172" y="86" fill="#fde68a" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="19" font-weight="700">Masked keys</text>
+  </g>
+
+  <g transform="translate(706 152)">
+    <rect x="0" y="0" width="408" height="320" rx="20" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+    <rect x="0" y="0" width="408" height="52" rx="20" fill="#111827"/>
+    <circle cx="30" cy="26" r="6" fill="#ef4444"/>
+    <circle cx="52" cy="26" r="6" fill="#f59e0b"/>
+    <circle cx="74" cy="26" r="6" fill="#22c55e"/>
+
+    <text x="30" y="94" fill="#22c55e" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="24">$ mimo-auth switch</text>
+    <text x="30" y="144" fill="#e2e8f0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="21">1  work-plan</text>
+    <text x="30" y="184" fill="#e2e8f0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="21">2  personal-api</text>
+    <text x="30" y="238" fill="#38bdf8" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="21">Claude Code now uses</text>
+    <text x="30" y="278" fill="#facc15" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', monospace" font-size="21">tp-****abcd</text>
   </g>
 </svg>
