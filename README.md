@@ -79,7 +79,7 @@ Verify the CLI:
 mimo-auth doctor
 ```
 
-`mimo-auth` uses colored output in an interactive terminal. Output stays plain text when piped, captured, or when `NO_COLOR` is set. You can override this with `MIMO_AUTH_COLOR=always` or `MIMO_AUTH_COLOR=never`.
+`mimo-auth` uses colored output in an interactive terminal. Status text, profile aliases, profile types, masked keys, URLs, models, and local paths use different colors so `add`, `show`, `switch`, `doctor`, `check`, and `list` are easier to scan. Output stays plain text when piped, captured, or when `NO_COLOR` is set. You can override this with `MIMO_AUTH_COLOR=always` or `MIMO_AUTH_COLOR=never`.
 
 ## Quick Start
 

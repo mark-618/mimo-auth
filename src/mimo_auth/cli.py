@@ -30,6 +30,14 @@ COLORS = {
     "blue": "\033[34m",
     "magenta": "\033[35m",
     "cyan": "\033[36m",
+    "white": "\033[37m",
+    "bright_black": "\033[90m",
+    "bright_red": "\033[91m",
+    "bright_green": "\033[92m",
+    "bright_yellow": "\033[93m",
+    "bright_blue": "\033[94m",
+    "bright_magenta": "\033[95m",
+    "bright_cyan": "\033[96m",
 }
 RESET = "\033[0m"
 
@@ -253,9 +261,11 @@ def save_profile(
         action = "Added"
     store.upsert(profile)
     print(
-        f"{style(action, 'green')} profile "
-        f"{style(repr(profile.alias), 'cyan')} ({profile.name})."
+        f"{style(action, status_color(action))} profile "
+        f"{style(repr(profile.alias), 'bright_cyan')} "
+        f"({style(profile.name, 'bright_magenta')})."
     )
+    print_compact_profile_summary(profile)
     return profile.alias
 
 
@@ -304,13 +314,22 @@ def switch_to_profile(
 ) -> int:
     backup_path = apply_profile(args.settings_path, profile)
     store.set_active_alias(profile.alias)
-    print(f"Claude Code now uses '{profile.alias}' ({profile.name}).")
+    print(
+        f"{style('Claude Code now uses', 'bright_green')} "
+        f"{style(repr(profile.alias), 'bright_cyan')} "
+        f"({style(profile.name, 'bright_magenta')})."
+    )
     if backup_path:
-        print(f"{style('Backup:', 'dim')} {backup_path}")
+        print_key_value("Backup", str(backup_path), "bright_black")
     else:
         print(style("Backup: skipped because settings.json did not exist.", "dim"))
-    print(f"{style('ANTHROPIC_BASE_URL', 'cyan')}={profile.base_url}")
-    print(f"{style('ANTHROPIC_AUTH_TOKEN', 'cyan')}={style(mask_api_key(profile.api_key), 'yellow')}")
+    print_key_value("ANTHROPIC_BASE_URL", profile.base_url, "green", separator="=")
+    print_key_value(
+        "ANTHROPIC_AUTH_TOKEN",
+        mask_api_key(profile.api_key),
+        "bright_yellow",
+        separator="=",
+    )
     return 0
 
 
@@ -322,9 +341,19 @@ def command_current(args: argparse.Namespace, store: ProfileStore) -> int:
         return 0
     if args.show_unmatched:
         print(style("No matching profile found.", "yellow"))
-        print(f"{style('ANTHROPIC_BASE_URL', 'cyan')}={current.get('ANTHROPIC_BASE_URL') or ''}")
+        print_key_value(
+            "ANTHROPIC_BASE_URL",
+            current.get("ANTHROPIC_BASE_URL") or "",
+            "green",
+            separator="=",
+        )
         token = current.get("ANTHROPIC_AUTH_TOKEN") or ""
-        print(f"{style('ANTHROPIC_AUTH_TOKEN', 'cyan')}={style(mask_api_key(token), 'yellow') if token else ''}")
+        print_key_value(
+            "ANTHROPIC_AUTH_TOKEN",
+            mask_api_key(token) if token else "",
+            "bright_yellow",
+            separator="=",
+        )
         return 0
     print(style("No matching profile found.", "yellow"))
     return 1
@@ -343,7 +372,10 @@ def command_remove(args: argparse.Namespace, store: ProfileStore) -> int:
         print("Cancelled.")
         return 1
     if store.remove(profile.alias):
-        print(f"{style('Removed', 'green')} profile {style(repr(profile.alias), 'cyan')}.")
+        print(
+            f"{style('Removed', 'bright_red')} profile "
+            f"{style(repr(profile.alias), 'bright_cyan')}."
+        )
         return 0
     print(f"Profile '{args.alias}' not found.", file=sys.stderr)
     return 1
@@ -351,17 +383,22 @@ def command_remove(args: argparse.Namespace, store: ProfileStore) -> int:
 
 def command_doctor(args: argparse.Namespace, store: ProfileStore) -> int:
     profile_count = len(store.load())
-    print(f"{style('Profile store:', 'cyan')} {store.path}")
-    print(f"{style('Profiles:', 'cyan')} {profile_count}")
-    print(f"{style('Claude settings:', 'cyan')} {args.settings_path}")
+    print(style("mimo-auth doctor", "bold"))
+    print_key_value("Profile store", str(store.path), "bright_blue")
+    print_key_value("Profiles", str(profile_count), "bright_magenta")
+    print_key_value("Claude settings", str(args.settings_path), "bright_blue")
     try:
         current = read_current_env(args.settings_path)
     except SettingsError as exc:
         print(f"Claude settings error: {exc}", file=sys.stderr)
         return 1
-    print(f"{style('ANTHROPIC_BASE_URL:', 'cyan')} {current.get('ANTHROPIC_BASE_URL') or ''}")
+    print_key_value("ANTHROPIC_BASE_URL", current.get("ANTHROPIC_BASE_URL") or "", "green")
     token = current.get("ANTHROPIC_AUTH_TOKEN") or ""
-    print(f"{style('ANTHROPIC_AUTH_TOKEN:', 'cyan')} {style(mask_api_key(token), 'yellow') if token else ''}")
+    print_key_value(
+        "ANTHROPIC_AUTH_TOKEN",
+        mask_api_key(token) if token else "",
+        "bright_yellow",
+    )
     return 0
 
 
@@ -430,12 +467,13 @@ def print_profile_table(profiles: list[Profile], active_alias: Optional[str]) ->
 
 
 def print_profile(profile: Profile) -> None:
-    print_field("alias", profile.alias, "cyan")
-    print_field("name", profile.name)
+    print(style("Profile", "bold"))
+    print_field("alias", profile.alias, "bright_cyan")
+    print_field("name", profile.name, "bright_magenta")
     print_field("type", profile.type, profile_type_color(profile.type))
-    print_field("base_url", profile.base_url)
-    print_field("api_key", mask_api_key(profile.api_key), "yellow")
-    print_field("default_model", profile.default_model)
+    print_field("base_url", profile.base_url, "green")
+    print_field("api_key", mask_api_key(profile.api_key), "bright_yellow")
+    print_field("default_model", profile.default_model, "bright_blue")
     print_field("created_at", profile.created_at, "dim")
     print_field("updated_at", profile.updated_at, "dim")
 
@@ -513,7 +551,15 @@ def style(text: str, color: str) -> str:
 
 
 def profile_type_color(profile_type: str) -> str:
-    return "magenta" if profile_type == "token-plan" else "blue"
+    return "bright_magenta" if profile_type == "token-plan" else "bright_blue"
+
+
+def status_color(status: str) -> str:
+    if status in {"Added", "Updated"}:
+        return "bright_green"
+    if status == "Removed":
+        return "bright_red"
+    return "white"
 
 
 def style_table_cell(column: int, value: str) -> str:
@@ -530,7 +576,31 @@ def style_table_cell(column: int, value: str) -> str:
 
 def print_field(label: str, value: str, value_color: Optional[str] = None) -> None:
     rendered_value = style(value, value_color) if value_color else value
-    print(f"{style(label + ':', 'cyan')} {rendered_value}")
+    print(f"{style(label + ':', 'bright_cyan')} {rendered_value}")
+
+
+def print_key_value(
+    label: str,
+    value: str,
+    value_color: Optional[str] = None,
+    *,
+    separator: str = ": ",
+) -> None:
+    rendered_value = style(value, value_color) if value_color else value
+    print(f"{style(label, 'bright_cyan')}{separator}{rendered_value}")
+
+
+def print_compact_profile_summary(profile: Profile) -> None:
+    print(
+        "  "
+        + "  ".join(
+            [
+                f"{style('type', 'bright_black')}={style(profile.type, profile_type_color(profile.type))}",
+                f"{style('model', 'bright_black')}={style(profile.default_model, 'bright_blue')}",
+                f"{style('key', 'bright_black')}={style(mask_api_key(profile.api_key), 'bright_yellow')}",
+            ]
+        )
+    )
 
 
 def default_base_url(profile_type: str) -> str:
@@ -543,7 +613,7 @@ def default_base_url(profile_type: str) -> str:
 
 def prompt_required(label: str) -> str:
     while True:
-        value = input(f"{label} [q]: ").strip()
+        value = input(f"{style(label, 'bright_cyan')} {style('[q]', 'bright_black')}: ").strip()
         if is_quit(value):
             raise KeyboardInterrupt
         if value:
@@ -551,17 +621,22 @@ def prompt_required(label: str) -> str:
 
 
 def prompt_default(label: str, default: str) -> str:
-    value = input(f"{label} [{default}, q]: ").strip()
+    value = input(
+        f"{style(label, 'bright_cyan')} "
+        f"{style('[' + default + ', q]', 'bright_black')}: "
+    ).strip()
     if is_quit(value):
         raise KeyboardInterrupt
     return value or default
 
 
 def prompt_profile_type() -> str:
-    print("Credential type:")
-    print("  1. Token Plan")
-    print("  2. Pay-as-you-go API")
-    value = input("Choose [1, q]: ").strip()
+    print(style("Credential type:", "bold"))
+    print(f"  {style('1', 'bright_magenta')}. {style('Token Plan', 'bright_magenta')}")
+    print(f"  {style('2', 'bright_blue')}. {style('Pay-as-you-go API', 'bright_blue')}")
+    value = input(
+        f"{style('Choose', 'bright_cyan')} {style('[1, q]', 'bright_black')}: "
+    ).strip()
     if is_quit(value):
         raise KeyboardInterrupt
     value = value or "1"
@@ -598,7 +673,10 @@ def pick_profile(
     print_profile_table(profiles, active_alias)
     print()
     while True:
-        selector = input(f"{prompt} [1-{len(profiles)}, q]: ").strip()
+        selector = input(
+            f"{style(prompt, 'bright_cyan')} "
+            f"{style('[' + '1-' + str(len(profiles)) + ', q]', 'bright_black')}: "
+        ).strip()
         if selector.lower() in {"q", "quit"}:
             raise KeyboardInterrupt
         try:
@@ -609,7 +687,7 @@ def pick_profile(
 
 def prompt_yes_no(label: str, default: bool) -> bool:
     suffix = " [Y/n/q]: " if default else " [y/N/q]: "
-    value = input(label + suffix).strip().lower()
+    value = input(style(label, "bright_cyan") + style(suffix, "bright_black")).strip().lower()
     if is_quit(value):
         raise KeyboardInterrupt
     if not value:
