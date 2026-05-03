@@ -170,6 +170,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers.add_parser("doctor", help="Check local paths and current settings.")
+    help_parser = subparsers.add_parser("help", help="Show mimo-auth help.")
+    help_parser.add_argument("topic", nargs="?")
     return parser
 
 
@@ -525,6 +527,87 @@ def command_doctor(args: argparse.Namespace, store: ProfileStore) -> int:
         "bright_yellow",
     )
     return 0
+
+
+def command_help(args: argparse.Namespace) -> int:
+    if args.topic:
+        return print_help_topic(args.topic)
+    print(style("mimo-auth", "bold"))
+    print("Local Xiaomi MiMo profile switcher for Claude Code.")
+    print()
+    print(style("Common flow", "bright_cyan"))
+    print_help_row("mimo-auth add", "Add a profile with an interactive wizard")
+    print_help_row("mimo-auth list", "List local profiles with masked keys")
+    print_help_row("mimo-auth switch", "Pick a profile and update Claude Code settings")
+    print_help_row("mimo-auth status", "Show active profile and Claude Code sync state")
+    print_help_row("mimo-auth check", "Test saved credentials with a minimal MiMo API call")
+    print()
+    print(style("Profile management", "bright_cyan"))
+    print_help_row("mimo-auth edit [alias]", "Edit name, type, endpoint, model, or key")
+    print_help_row("mimo-auth rename old new", "Rename a profile alias")
+    print_help_row("mimo-auth remove", "Remove one or more profiles")
+    print()
+    print(style("Shortcuts", "bright_cyan"))
+    print_help_row("mimo-auth add-api <alias>", "Add a pay-as-you-go API profile")
+    print_help_row("mimo-auth add-token <alias>", "Add a Token Plan profile")
+    print_help_row("mimo-auth use <alias|number>", "Alias for switch")
+    print()
+    print(f"Run {style('mimo-auth help <command>', 'bright_blue')} for focused help.")
+    return 0
+
+
+def print_help_topic(topic: str) -> int:
+    topics = {
+        "add": [
+            ("mimo-auth add", "Interactive wizard. Choose type, official MiMo model, and key."),
+            ("mimo-auth add <alias> --type api --base-url <url> --api-key <key>", "Advanced explicit add."),
+            ("mimo-auth add-api <alias>", "Shortcut using the default MiMo API endpoint."),
+            ("mimo-auth add-token <alias>", "Shortcut using the default Token Plan endpoint."),
+        ],
+        "switch": [
+            ("mimo-auth switch", "Open profile picker."),
+            ("mimo-auth switch <alias|number|fragment>", "Switch directly."),
+            ("mimo-auth use <alias|number|fragment>", "Alias for switch."),
+        ],
+        "remove": [
+            ("mimo-auth remove", "Open multi-select picker. Use spaces, for example: 1 3."),
+            ("mimo-auth remove <alias|number|fragment>", "Remove one profile."),
+            ("mimo-auth remove <alias> --yes", "Remove without confirmation."),
+        ],
+        "edit": [
+            ("mimo-auth edit", "Pick a profile and edit interactively."),
+            ("mimo-auth edit <alias> --name <name>", "Edit display name."),
+            ("mimo-auth edit <alias> --default-model <model>", "Edit model directly."),
+            ("mimo-auth edit <alias> --api-key <key>", "Update key without printing it."),
+        ],
+        "rename": [
+            ("mimo-auth rename <old-alias> <new-alias>", "Rename an alias and preserve profile data."),
+        ],
+        "status": [
+            ("mimo-auth status", "Show active alias, Claude Code match, paths, and masked env."),
+        ],
+        "check": [
+            ("mimo-auth check", "Check all profiles with a minimal API call."),
+            ("mimo-auth check <alias|number|fragment>", "Check one profile."),
+            ("mimo-auth check --model <model>", "Use a specific model for the check request."),
+        ],
+        "list": [
+            ("mimo-auth list", "Show profiles, active marker, type, endpoint, masked key, and model."),
+        ],
+    }
+    rows = topics.get(topic)
+    if not rows:
+        print(f"Unknown help topic: {topic}", file=sys.stderr)
+        print("Try: add, switch, remove, edit, rename, status, check, list", file=sys.stderr)
+        return 1
+    print(style(f"mimo-auth help {topic}", "bold"))
+    for command, description in rows:
+        print_help_row(command, description)
+    return 0
+
+
+def print_help_row(command: str, description: str) -> None:
+    print(f"  {style(command.ljust(36), 'bright_blue')} {description}")
 
 
 def command_check(args: argparse.Namespace, store: ProfileStore) -> int:
@@ -931,6 +1014,8 @@ def run(argv: Optional[list[str]] = None) -> int:
             return command_check(args, store)
         if args.command == "doctor":
             return command_doctor(args, store)
+        if args.command == "help":
+            return command_help(args)
     except KeyboardInterrupt:
         print("Cancelled.", file=sys.stderr)
         return 1

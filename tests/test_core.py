@@ -242,6 +242,33 @@ def test_short_add_commands_and_numeric_use(tmp_path, capsys):
     assert settings["env"]["ANTHROPIC_BASE_URL"] == API_BASE_URL
 
 
+def test_help_command_outputs_overview_and_topics(tmp_path, capsys):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+
+    assert run(common_args + ["help"]) == 0
+    output = capsys.readouterr().out
+    assert "mimo-auth" in output
+    assert "Common flow" in output
+    assert "mimo-auth add" in output
+    assert "mimo-auth status" in output
+
+    assert run(common_args + ["help", "remove"]) == 0
+    output = capsys.readouterr().out
+    assert "mimo-auth help remove" in output
+    assert "multi-select" in output
+
+    assert run(common_args + ["help", "nope"]) == 1
+    output = capsys.readouterr()
+    assert "Unknown help topic: nope" in output.err
+
+
 def test_status_edit_and_rename(tmp_path, capsys):
     store_path = tmp_path / "profiles.json"
     settings_path = tmp_path / "settings.json"

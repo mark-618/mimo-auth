@@ -250,6 +250,7 @@ mimo-auth remove [alias|number|fragment]
 mimo-auth edit [alias|number|fragment]
 mimo-auth rename <old-alias> <new-alias>
 mimo-auth doctor
+mimo-auth help [command]
 ```
 
 Global options:
