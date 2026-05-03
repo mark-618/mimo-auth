@@ -281,7 +281,7 @@ def save_profile(
     store.upsert(profile)
     print(
         f"{style(action, status_color(action))} profile "
-        f"{style(repr(profile.alias), 'bright_cyan')} "
+        f"{style(repr(profile.alias), 'cyan')} "
         f"({style(profile.name, 'bright_magenta')})."
     )
     print_compact_profile_summary(profile)
@@ -335,7 +335,7 @@ def switch_to_profile(
     store.set_active_alias(profile.alias)
     print(
         f"{style('Claude Code now uses', 'bright_green')} "
-        f"{style(repr(profile.alias), 'bright_cyan')} "
+        f"{style(repr(profile.alias), 'cyan')} "
         f"({style(profile.name, 'bright_magenta')})."
     )
     if backup_path:
@@ -392,24 +392,24 @@ def command_status(args: argparse.Namespace, store: ProfileStore) -> int:
         settings_error = str(exc)
 
     print(style("mimo-auth status", "bold"))
-    print_key_value("Profile store", str(store.path), "bright_blue")
+    print_key_value("Profile store", str(store.path), "blue")
     print_key_value("Profiles", str(len(profiles)), "bright_magenta")
-    print_key_value("Claude settings", str(args.settings_path), "bright_blue")
+    print_key_value("Claude settings", str(args.settings_path), "blue")
     if settings_error:
         print_key_value("Settings", settings_error, "bright_red")
         return 1
 
     if active_profile:
-        print_key_value("Active alias", active_profile.alias, "bright_cyan")
+        print_key_value("Active alias", active_profile.alias, "cyan")
         print_key_value("Active type", active_profile.type, profile_type_color(active_profile.type))
-        print_key_value("Active model", active_profile.default_model, "bright_blue")
+        print_key_value("Active model", active_profile.default_model, "blue")
     elif active_alias:
         print_key_value("Active alias", f"{active_alias} (missing)", "bright_red")
     else:
         print_key_value("Active alias", "not set", "bright_yellow")
 
     if matched:
-        print_key_value("Claude profile", matched.alias, "bright_cyan")
+        print_key_value("Claude profile", matched.alias, "cyan")
         state = "synced" if active_profile and matched.alias == active_profile.alias else "settings differ"
         print_key_value("State", state, "bright_green" if state == "synced" else "bright_yellow")
     else:
@@ -443,7 +443,7 @@ def command_remove(args: argparse.Namespace, store: ProfileStore) -> int:
         if store.remove(profile.alias):
             removed.append(profile.alias)
     for alias in removed:
-        print(f"{style('Removed', 'bright_red')} profile {style(repr(alias), 'bright_cyan')}.")
+        print(f"{style('Removed', 'bright_red')} profile {style(repr(alias), 'cyan')}.")
     return 0 if removed else 1
 
 
@@ -476,7 +476,7 @@ def command_edit(args: argparse.Namespace, store: ProfileStore) -> int:
         default_model=default_model,
     )
     store.upsert(updated)
-    print(f"{style('Updated', 'bright_green')} profile {style(repr(updated.alias), 'bright_cyan')}.")
+    print(f"{style('Updated', 'bright_green')} profile {style(repr(updated.alias), 'cyan')}.")
     print_compact_profile_summary(updated)
     return 0
 
@@ -503,7 +503,7 @@ def command_rename(args: argparse.Namespace, store: ProfileStore) -> int:
     print(
         f"{style('Renamed', 'bright_green')} "
         f"{style(repr(old_profile.alias), 'bright_black')} -> "
-        f"{style(repr(renamed.alias), 'bright_cyan')}."
+        f"{style(repr(renamed.alias), 'cyan')}."
     )
     return 0
 
@@ -511,9 +511,9 @@ def command_rename(args: argparse.Namespace, store: ProfileStore) -> int:
 def command_doctor(args: argparse.Namespace, store: ProfileStore) -> int:
     profile_count = len(store.load())
     print(style("mimo-auth doctor", "bold"))
-    print_key_value("Profile store", str(store.path), "bright_blue")
+    print_key_value("Profile store", str(store.path), "blue")
     print_key_value("Profiles", str(profile_count), "bright_magenta")
-    print_key_value("Claude settings", str(args.settings_path), "bright_blue")
+    print_key_value("Claude settings", str(args.settings_path), "blue")
     try:
         current = read_current_env(args.settings_path)
     except SettingsError as exc:
@@ -535,24 +535,24 @@ def command_help(args: argparse.Namespace) -> int:
     print(style("mimo-auth", "bold"))
     print("Local Xiaomi MiMo profile switcher for Claude Code.")
     print()
-    print(style("Common flow", "bright_cyan"))
+    print(style("Common flow", "magenta"))
     print_help_row("mimo-auth add", "Add a profile with an interactive wizard")
     print_help_row("mimo-auth list", "List local profiles with masked keys")
     print_help_row("mimo-auth switch", "Pick a profile and update Claude Code settings")
     print_help_row("mimo-auth status", "Show active profile and Claude Code sync state")
     print_help_row("mimo-auth check", "Test saved credentials with a minimal MiMo API call")
     print()
-    print(style("Profile management", "bright_cyan"))
+    print(style("Profile management", "magenta"))
     print_help_row("mimo-auth edit [alias]", "Edit name, type, endpoint, model, or key")
     print_help_row("mimo-auth rename old new", "Rename a profile alias")
     print_help_row("mimo-auth remove", "Remove one or more profiles")
     print()
-    print(style("Shortcuts", "bright_cyan"))
+    print(style("Shortcuts", "magenta"))
     print_help_row("mimo-auth add-api <alias>", "Add a pay-as-you-go API profile")
     print_help_row("mimo-auth add-token <alias>", "Add a Token Plan profile")
     print_help_row("mimo-auth use <alias|number>", "Alias for switch")
     print()
-    print(f"Run {style('mimo-auth help <command>', 'bright_blue')} for focused help.")
+    print(f"Run {style('mimo-auth help <command>', 'green')} for focused help.")
     return 0
 
 
@@ -607,7 +607,7 @@ def print_help_topic(topic: str) -> int:
 
 
 def print_help_row(command: str, description: str) -> None:
-    print(f"  {style(command.ljust(36), 'bright_blue')} {description}")
+    print(f"  {style(command.ljust(36), 'green')} {style(description, 'white')}")
 
 
 def command_check(args: argparse.Namespace, store: ProfileStore) -> int:
@@ -676,12 +676,12 @@ def print_profile_table(profiles: list[Profile], active_alias: Optional[str]) ->
 
 def print_profile(profile: Profile) -> None:
     print(style("Profile", "bold"))
-    print_field("alias", profile.alias, "bright_cyan")
+    print_field("alias", profile.alias, "cyan")
     print_field("name", profile.name, "bright_magenta")
     print_field("type", profile.type, profile_type_color(profile.type))
     print_field("base_url", profile.base_url, "green")
     print_field("api_key", mask_api_key(profile.api_key), "bright_yellow")
-    print_field("default_model", profile.default_model, "bright_blue")
+    print_field("default_model", profile.default_model, "blue")
     print_field("created_at", profile.created_at, "dim")
     print_field("updated_at", profile.updated_at, "dim")
 
@@ -759,7 +759,7 @@ def style(text: str, color: str) -> str:
 
 
 def profile_type_color(profile_type: str) -> str:
-    return "bright_magenta" if profile_type == "token-plan" else "bright_blue"
+    return "bright_magenta" if profile_type == "token-plan" else "blue"
 
 
 def status_color(status: str) -> str:
@@ -784,7 +784,7 @@ def style_table_cell(column: int, value: str) -> str:
 
 def print_field(label: str, value: str, value_color: Optional[str] = None) -> None:
     rendered_value = style(value, value_color) if value_color else value
-    print(f"{style(label + ':', 'bright_cyan')} {rendered_value}")
+    print(f"{style(label + ':', 'cyan')} {rendered_value}")
 
 
 def print_key_value(
@@ -795,7 +795,7 @@ def print_key_value(
     separator: str = ": ",
 ) -> None:
     rendered_value = style(value, value_color) if value_color else value
-    print(f"{style(label, 'bright_cyan')}{separator}{rendered_value}")
+    print(f"{style(label, 'cyan')}{separator}{rendered_value}")
 
 
 def print_compact_profile_summary(profile: Profile) -> None:
@@ -804,7 +804,7 @@ def print_compact_profile_summary(profile: Profile) -> None:
         + "  ".join(
             [
                 f"{style('type', 'bright_black')}={style(profile.type, profile_type_color(profile.type))}",
-                f"{style('model', 'bright_black')}={style(profile.default_model, 'bright_blue')}",
+                f"{style('model', 'bright_black')}={style(profile.default_model, 'blue')}",
                 f"{style('key', 'bright_black')}={style(mask_api_key(profile.api_key), 'bright_yellow')}",
             ]
         )
@@ -821,7 +821,7 @@ def default_base_url(profile_type: str) -> str:
 
 def prompt_required(label: str) -> str:
     while True:
-        value = input(f"{style(label, 'bright_cyan')} {style('[q]', 'bright_black')}: ").strip()
+        value = input(f"{style(label, 'cyan')} {style('[q]', 'bright_black')}: ").strip()
         if is_quit(value):
             raise KeyboardInterrupt
         if value:
@@ -830,7 +830,7 @@ def prompt_required(label: str) -> str:
 
 def prompt_default(label: str, default: str) -> str:
     value = input(
-        f"{style(label, 'bright_cyan')} "
+        f"{style(label, 'cyan')} "
         f"{style('[' + default + ', q]', 'bright_black')}: "
     ).strip()
     if is_quit(value):
@@ -841,10 +841,10 @@ def prompt_default(label: str, default: str) -> str:
 def prompt_profile_type(default: str = "token-plan") -> str:
     print(style("Credential type:", "bold"))
     print(f"  {style('1', 'bright_magenta')}. {style('Token Plan', 'bright_magenta')}")
-    print(f"  {style('2', 'bright_blue')}. {style('Pay-as-you-go API', 'bright_blue')}")
+    print(f"  {style('2', 'blue')}. {style('Pay-as-you-go API', 'blue')}")
     default_choice = "2" if default == "api" else "1"
     value = input(
-        f"{style('Choose', 'bright_cyan')} "
+        f"{style('Choose', 'cyan')} "
         f"{style('[' + default_choice + ', q]', 'bright_black')}: "
     ).strip()
     if is_quit(value):
@@ -863,7 +863,7 @@ def prompt_model(default: str) -> str:
     for index, (model, description) in enumerate(MIMO_MODELS, start=1):
         if model == default:
             default_index = index
-        color = "bright_green" if model == default else "bright_blue"
+        color = "bright_green" if model == default else "blue"
         print(
             f"  {style(str(index), color)}. "
             f"{style(model, color)} "
@@ -871,7 +871,7 @@ def prompt_model(default: str) -> str:
         )
     default_label = str(default_index) if default_index is not None else default
     value = input(
-        f"{style('Choose model', 'bright_cyan')} "
+        f"{style('Choose model', 'cyan')} "
         f"{style('[' + default_label + ', q]', 'bright_black')}: "
     ).strip()
     if is_quit(value):
@@ -920,7 +920,7 @@ def pick_profile(
     print()
     while True:
         selector = input(
-            f"{style(prompt, 'bright_cyan')} "
+            f"{style(prompt, 'cyan')} "
             f"{style('[' + '1-' + str(len(profiles)) + ', q]', 'bright_black')}: "
         ).strip()
         if selector.lower() in {"q", "quit"}:
@@ -940,7 +940,7 @@ def pick_profiles_for_remove(args: argparse.Namespace, store: ProfileStore) -> l
     print()
     while True:
         selector = input(
-            f"{style('Remove profiles', 'bright_cyan')} "
+            f"{style('Remove profiles', 'cyan')} "
             f"{style('[1 3, all, q]', 'bright_black')}: "
         ).strip()
         if is_quit(selector):
@@ -971,7 +971,7 @@ def pick_profiles_for_remove(args: argparse.Namespace, store: ProfileStore) -> l
 
 def prompt_yes_no(label: str, default: bool) -> bool:
     suffix = " [Y/n/q]: " if default else " [y/N/q]: "
-    value = input(style(label, "bright_cyan") + style(suffix, "bright_black")).strip().lower()
+    value = input(style(label, "cyan") + style(suffix, "bright_black")).strip().lower()
     if is_quit(value):
         raise KeyboardInterrupt
     if not value:
