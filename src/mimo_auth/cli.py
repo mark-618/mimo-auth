@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import os
 import sys
 from pathlib import Path
 from typing import Iterable, Optional
@@ -18,6 +19,19 @@ from .claude import (
 from .models import Profile, mask_api_key, validate_profile_type
 from .models import API_BASE_URL, DEFAULT_MODEL, TOKEN_PLAN_BASE_URL
 from .store import DEFAULT_STORE_PATH, ProfileStore
+
+
+COLORS = {
+    "bold": "\033[1m",
+    "dim": "\033[2m",
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "magenta": "\033[35m",
+    "cyan": "\033[36m",
+}
+RESET = "\033[0m"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -140,7 +154,7 @@ def build_parser() -> argparse.ArgumentParser:
 def command_add(args: argparse.Namespace, store: ProfileStore) -> int:
     interactive = args.alias is None
     if interactive:
-        print("Add MiMo profile")
+        print(style("Add MiMo profile", "bold"))
         print()
     alias = args.alias or prompt_required("Profile alias")
     profile_type = args.type or prompt_profile_type()
@@ -212,7 +226,12 @@ def save_profile(
             original_alias = alias
             alias = available_alias(alias, profile_type, profiles)
             existing = None
-            print(f"Profile '{original_alias}' already exists; using '{alias}' instead.")
+            print(
+                style(
+                    f"Profile '{original_alias}' already exists; using '{alias}' instead.",
+                    "yellow",
+                )
+            )
     if existing:
         profile = existing.with_updates(
             name=name,
@@ -233,7 +252,10 @@ def save_profile(
         )
         action = "Added"
     store.upsert(profile)
-    print(f"{action} profile '{profile.alias}' ({profile.name}).")
+    print(
+        f"{style(action, 'green')} profile "
+        f"{style(repr(profile.alias), 'cyan')} ({profile.name})."
+    )
     return profile.alias
 
 
@@ -257,7 +279,7 @@ def available_alias(
 def command_list(args: argparse.Namespace, store: ProfileStore) -> int:
     profiles = sorted(store.list_profiles(), key=lambda profile: profile.alias)
     if not profiles:
-        print("No profiles found.")
+        print(style("No profiles found.", "yellow"))
         return 0
     active_alias = active_alias_for_list(args, store)
     print_profile_table(profiles, active_alias)
@@ -284,11 +306,11 @@ def switch_to_profile(
     store.set_active_alias(profile.alias)
     print(f"Claude Code now uses '{profile.alias}' ({profile.name}).")
     if backup_path:
-        print(f"Backup: {backup_path}")
+        print(f"{style('Backup:', 'dim')} {backup_path}")
     else:
-        print("Backup: skipped because settings.json did not exist.")
-    print(f"ANTHROPIC_BASE_URL={profile.base_url}")
-    print(f"ANTHROPIC_AUTH_TOKEN={mask_api_key(profile.api_key)}")
+        print(style("Backup: skipped because settings.json did not exist.", "dim"))
+    print(f"{style('ANTHROPIC_BASE_URL', 'cyan')}={profile.base_url}")
+    print(f"{style('ANTHROPIC_AUTH_TOKEN', 'cyan')}={style(mask_api_key(profile.api_key), 'yellow')}")
     return 0
 
 
@@ -299,12 +321,12 @@ def command_current(args: argparse.Namespace, store: ProfileStore) -> int:
         print_profile(matched)
         return 0
     if args.show_unmatched:
-        print("No matching profile found.")
-        print(f"ANTHROPIC_BASE_URL={current.get('ANTHROPIC_BASE_URL') or ''}")
+        print(style("No matching profile found.", "yellow"))
+        print(f"{style('ANTHROPIC_BASE_URL', 'cyan')}={current.get('ANTHROPIC_BASE_URL') or ''}")
         token = current.get("ANTHROPIC_AUTH_TOKEN") or ""
-        print(f"ANTHROPIC_AUTH_TOKEN={mask_api_key(token) if token else ''}")
+        print(f"{style('ANTHROPIC_AUTH_TOKEN', 'cyan')}={style(mask_api_key(token), 'yellow') if token else ''}")
         return 0
-    print("No matching profile found.")
+    print(style("No matching profile found.", "yellow"))
     return 1
 
 
@@ -321,7 +343,7 @@ def command_remove(args: argparse.Namespace, store: ProfileStore) -> int:
         print("Cancelled.")
         return 1
     if store.remove(profile.alias):
-        print(f"Removed profile '{profile.alias}'.")
+        print(f"{style('Removed', 'green')} profile {style(repr(profile.alias), 'cyan')}.")
         return 0
     print(f"Profile '{args.alias}' not found.", file=sys.stderr)
     return 1
@@ -329,17 +351,17 @@ def command_remove(args: argparse.Namespace, store: ProfileStore) -> int:
 
 def command_doctor(args: argparse.Namespace, store: ProfileStore) -> int:
     profile_count = len(store.load())
-    print(f"Profile store: {store.path}")
-    print(f"Profiles: {profile_count}")
-    print(f"Claude settings: {args.settings_path}")
+    print(f"{style('Profile store:', 'cyan')} {store.path}")
+    print(f"{style('Profiles:', 'cyan')} {profile_count}")
+    print(f"{style('Claude settings:', 'cyan')} {args.settings_path}")
     try:
         current = read_current_env(args.settings_path)
     except SettingsError as exc:
         print(f"Claude settings error: {exc}", file=sys.stderr)
         return 1
-    print(f"ANTHROPIC_BASE_URL: {current.get('ANTHROPIC_BASE_URL') or ''}")
+    print(f"{style('ANTHROPIC_BASE_URL:', 'cyan')} {current.get('ANTHROPIC_BASE_URL') or ''}")
     token = current.get("ANTHROPIC_AUTH_TOKEN") or ""
-    print(f"ANTHROPIC_AUTH_TOKEN: {mask_api_key(token) if token else ''}")
+    print(f"{style('ANTHROPIC_AUTH_TOKEN:', 'cyan')} {style(mask_api_key(token), 'yellow') if token else ''}")
     return 0
 
 
@@ -350,24 +372,26 @@ def command_check(args: argparse.Namespace, store: ProfileStore) -> int:
         else sorted(store.list_profiles(), key=lambda profile: profile.alias)
     )
     if not profiles:
-        print("No profiles found.")
+        print(style("No profiles found.", "yellow"))
         return 1
     failures = 0
     for profile in profiles:
         print(
-            f"Checking {profile.alias} ({profile.type}, {mask_api_key(profile.api_key)}) ...",
+            f"{style('Checking', 'cyan')} {style(profile.alias, 'bold')} "
+            f"({style(profile.type, profile_type_color(profile.type))}, "
+            f"{style(mask_api_key(profile.api_key), 'yellow')}) ...",
             flush=True,
         )
         result = check_profile(profile, model=args.model, timeout=args.timeout)
         if result.ok:
-            print("  OK")
+            print(f"  {style('OK', 'green')}")
         else:
             failures += 1
             if result.status is None:
-                print("  FAILED")
+                print(f"  {style('FAILED', 'red')}")
             else:
-                print(f"  FAILED (HTTP {result.status})")
-            print(f"  Reason: {result.message}")
+                print(f"  {style('FAILED', 'red')} (HTTP {result.status})")
+            print(f"  {style('Reason:', 'yellow')} {result.message}")
     return 1 if failures else 0
 
 
@@ -391,20 +415,29 @@ def print_profile_table(profiles: list[Profile], active_alias: Optional[str]) ->
         max(len(row[column]) for row in [headers] + rows)
         for column in range(len(headers))
     ]
-    print("  ".join(header.ljust(widths[index]) for index, header in enumerate(headers)))
+    print(
+        "  ".join(
+            style(header.ljust(widths[index]), "bold") for index, header in enumerate(headers)
+        )
+    )
     for row in rows:
-        print("  ".join(value.ljust(widths[index]) for index, value in enumerate(row)))
+        print(
+            "  ".join(
+                style_table_cell(index, value.ljust(widths[index]))
+                for index, value in enumerate(row)
+            )
+        )
 
 
 def print_profile(profile: Profile) -> None:
-    print(f"alias: {profile.alias}")
-    print(f"name: {profile.name}")
-    print(f"type: {profile.type}")
-    print(f"base_url: {profile.base_url}")
-    print(f"api_key: {mask_api_key(profile.api_key)}")
-    print(f"default_model: {profile.default_model}")
-    print(f"created_at: {profile.created_at}")
-    print(f"updated_at: {profile.updated_at}")
+    print_field("alias", profile.alias, "cyan")
+    print_field("name", profile.name)
+    print_field("type", profile.type, profile_type_color(profile.type))
+    print_field("base_url", profile.base_url)
+    print_field("api_key", mask_api_key(profile.api_key), "yellow")
+    print_field("default_model", profile.default_model)
+    print_field("created_at", profile.created_at, "dim")
+    print_field("updated_at", profile.updated_at, "dim")
 
 
 def require_profile(store: ProfileStore, alias: str) -> Profile:
@@ -459,6 +492,45 @@ def active_alias_for_list(args: argparse.Namespace, store: ProfileStore) -> Opti
     except SettingsError:
         pass
     return store.get_active_alias()
+
+
+def color_enabled() -> bool:
+    color_mode = os.environ.get("MIMO_AUTH_COLOR", "").lower()
+    if color_mode in {"always", "1", "true", "yes"}:
+        return True
+    if color_mode in {"never", "0", "false", "no"}:
+        return False
+    return "NO_COLOR" not in os.environ and sys.stdout.isatty()
+
+
+def style(text: str, color: str) -> str:
+    if not color_enabled():
+        return text
+    code = COLORS.get(color)
+    if not code:
+        return text
+    return f"{code}{text}{RESET}"
+
+
+def profile_type_color(profile_type: str) -> str:
+    return "magenta" if profile_type == "token-plan" else "blue"
+
+
+def style_table_cell(column: int, value: str) -> str:
+    if column == 0 and value.strip():
+        return style(value, "green")
+    if column == 2:
+        return style(value, "cyan")
+    if column == 3:
+        return style(value, profile_type_color(value.strip()))
+    if column == 6:
+        return style(value, "yellow")
+    return value
+
+
+def print_field(label: str, value: str, value_color: Optional[str] = None) -> None:
+    rendered_value = style(value, value_color) if value_color else value
+    print(f"{style(label + ':', 'cyan')} {rendered_value}")
 
 
 def default_base_url(profile_type: str) -> str:

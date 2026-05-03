@@ -414,3 +414,25 @@ def test_check_single_profile_success(tmp_path, capsys, monkeypatch):
     assert "Checking lab" in output
     assert "OK" in output
     assert "sk-demo-lab-abcd" not in output
+
+
+def test_color_output_can_be_forced_or_disabled(tmp_path, capsys, monkeypatch):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(json.dumps({"env": {}}), encoding="utf-8")
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+    run(common_args + ["add-api", "lab", "--api-key", "sk-demo-lab-abcd"])
+    capsys.readouterr()
+
+    monkeypatch.setenv("MIMO_AUTH_COLOR", "always")
+    assert run(common_args + ["list"]) == 0
+    assert "\033[" in capsys.readouterr().out
+
+    monkeypatch.setenv("MIMO_AUTH_COLOR", "never")
+    assert run(common_args + ["list"]) == 0
+    assert "\033[" not in capsys.readouterr().out
