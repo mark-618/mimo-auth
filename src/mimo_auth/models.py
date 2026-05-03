@@ -11,6 +11,17 @@ PROFILE_TYPES = {"api", "token-plan"}
 API_BASE_URL = "https://api.xiaomimimo.com/anthropic"
 TOKEN_PLAN_BASE_URL = "https://token-plan-cn.xiaomimimo.com/anthropic"
 DEFAULT_MODEL = "mimo-v2.5-pro"
+MIMO_MODELS = [
+    ("mimo-v2.5-pro", "Pro Series, 1M context"),
+    ("mimo-v2-pro", "Pro Series, 1M context"),
+    ("mimo-v2.5", "Omni Series, 1M context"),
+    ("mimo-v2-omni", "Omni Series, 256K context"),
+    ("mimo-v2-flash", "Flash Series, 256K context"),
+    ("mimo-v2.5-tts", "TTS Series"),
+    ("mimo-v2.5-tts-voiceclone", "TTS voice clone"),
+    ("mimo-v2.5-tts-voicedesign", "TTS voice design"),
+    ("mimo-v2-tts", "TTS Series"),
+]
 
 
 def utc_now_iso() -> str:

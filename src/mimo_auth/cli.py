@@ -17,7 +17,7 @@ from .claude import (
     read_current_env,
 )
 from .models import Profile, mask_api_key, utc_now_iso, validate_profile_type
-from .models import API_BASE_URL, DEFAULT_MODEL, TOKEN_PLAN_BASE_URL
+from .models import API_BASE_URL, DEFAULT_MODEL, MIMO_MODELS, TOKEN_PLAN_BASE_URL
 from .store import DEFAULT_STORE_PATH, ProfileStore
 
 
@@ -183,7 +183,7 @@ def command_add(args: argparse.Namespace, store: ProfileStore) -> int:
     base_url = args.base_url or default_base_url(profile_type)
     name = args.name or prompt_default("Display name", alias)
     default_model = args.default_model or (
-        prompt_default("Default model", DEFAULT_MODEL) if interactive else DEFAULT_MODEL
+        prompt_model(DEFAULT_MODEL) if interactive else DEFAULT_MODEL
     )
     api_key = args.api_key or prompt_secret("MiMo API key")
     saved_alias = save_profile(
@@ -457,7 +457,7 @@ def command_edit(args: argparse.Namespace, store: ProfileStore) -> int:
         profile_type = prompt_profile_type(default=profile.type)
         base_default = profile.base_url if profile_type == profile.type else default_base_url(profile_type)
         base_url = prompt_default("Base URL", base_default)
-        default_model = prompt_default("Default model", profile.default_model)
+        default_model = prompt_model(profile.default_model)
         api_key = prompt_secret_optional("MiMo API key", profile.api_key)
     else:
         name = args.name if args.name is not None else profile.name
@@ -772,6 +772,35 @@ def prompt_profile_type(default: str = "token-plan") -> str:
     if value in {"2", "api"}:
         return "api"
     raise ValueError("type must be one of: api, token-plan")
+
+
+def prompt_model(default: str) -> str:
+    print(style("Default model:", "bold"))
+    default_index = None
+    for index, (model, description) in enumerate(MIMO_MODELS, start=1):
+        if model == default:
+            default_index = index
+        color = "bright_green" if model == default else "bright_blue"
+        print(
+            f"  {style(str(index), color)}. "
+            f"{style(model, color)} "
+            f"{style('- ' + description, 'bright_black')}"
+        )
+    default_label = str(default_index) if default_index is not None else default
+    value = input(
+        f"{style('Choose model', 'bright_cyan')} "
+        f"{style('[' + default_label + ', q]', 'bright_black')}: "
+    ).strip()
+    if is_quit(value):
+        raise KeyboardInterrupt
+    if not value:
+        return default
+    if value.isdigit():
+        index = int(value)
+        if 1 <= index <= len(MIMO_MODELS):
+            return MIMO_MODELS[index - 1][0]
+    valid_models = ", ".join(model for model, _description in MIMO_MODELS)
+    raise ValueError(f"model must be one of: {valid_models}")
 
 
 def prompt_secret(label: str) -> str:
