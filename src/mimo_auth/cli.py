@@ -67,7 +67,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_parser.add_argument("--type", choices=["api", "token-plan"])
     add_parser.add_argument("--base-url")
     add_parser.add_argument("--api-key")
-    add_parser.add_argument("--default-model", default=DEFAULT_MODEL)
+    add_parser.add_argument("--default-model")
     add_parser.add_argument(
         "--force",
         action="store_true",
@@ -182,6 +182,9 @@ def command_add(args: argparse.Namespace, store: ProfileStore) -> int:
     profile_type = args.type or prompt_profile_type()
     base_url = args.base_url or default_base_url(profile_type)
     name = args.name or prompt_default("Display name", alias)
+    default_model = args.default_model or (
+        prompt_default("Default model", DEFAULT_MODEL) if interactive else DEFAULT_MODEL
+    )
     api_key = args.api_key or prompt_secret("MiMo API key")
     saved_alias = save_profile(
         store,
@@ -190,7 +193,7 @@ def command_add(args: argparse.Namespace, store: ProfileStore) -> int:
         profile_type=profile_type,
         base_url=base_url,
         api_key=api_key,
-        default_model=args.default_model or DEFAULT_MODEL,
+        default_model=default_model,
         force=args.force,
     )
     if interactive and prompt_yes_no("Use it for Claude Code now?", default=True):

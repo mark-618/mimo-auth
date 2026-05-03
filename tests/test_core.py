@@ -447,6 +447,49 @@ def test_interactive_add_can_quit_mid_flow(tmp_path, capsys, monkeypatch):
     assert list(ProfileStore(store_path).list_profiles()) == []
 
 
+def test_interactive_add_prompts_for_default_model(tmp_path, capsys, monkeypatch):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(json.dumps({"env": {}}), encoding="utf-8")
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+    answers = iter(["lab", "2", "", "mimo-v2.5-fast", "n"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+    monkeypatch.setattr("getpass.getpass", lambda _prompt: "sk-demo-lab-abcd")
+
+    assert run(common_args + ["add"]) == 0
+    output = capsys.readouterr().out
+    assert "model=mimo-v2.5-fast" in output
+    profile = ProfileStore(store_path).get("lab")
+    assert profile is not None
+    assert profile.default_model == "mimo-v2.5-fast"
+
+
+def test_interactive_add_defaults_model_to_pro(tmp_path, capsys, monkeypatch):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(json.dumps({"env": {}}), encoding="utf-8")
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+    answers = iter(["lab", "2", "", "", "n"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+    monkeypatch.setattr("getpass.getpass", lambda _prompt: "sk-demo-lab-abcd")
+
+    assert run(common_args + ["add"]) == 0
+    capsys.readouterr()
+    profile = ProfileStore(store_path).get("lab")
+    assert profile is not None
+    assert profile.default_model == "mimo-v2.5-pro"
+
+
 def test_check_all_profiles_masks_keys_and_reports_failures(
     tmp_path,
     capsys,

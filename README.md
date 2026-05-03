@@ -204,10 +204,12 @@ It asks for:
 - profile alias
 - credential type
 - display name
+- default model, defaulting to `mimo-v2.5-pro`
 - API key
 - whether to use the profile for Claude Code immediately
 
 If the API key is omitted in shortcut commands, `mimo-auth` prompts for it without echoing input.
+MiMo supports more than one model, so set `default_model` to the model you want Claude Code to use for that profile.
 
 ## Default MiMo Endpoints
 
