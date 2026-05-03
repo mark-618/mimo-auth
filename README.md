@@ -162,6 +162,8 @@ mimo-auth remove me-plan
 mimo-auth remove 2 --yes
 ```
 
+In interactive pickers and confirmation prompts, type `q` or `quit` to cancel.
+
 ## Interactive Add
 
 You can also use the interactive wizard:
@@ -169,6 +171,8 @@ You can also use the interactive wizard:
 ```bash
 mimo-auth add
 ```
+
+Type `q` or `quit` at any wizard prompt to cancel without saving a profile.
 
 It asks for:
 

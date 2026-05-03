@@ -322,6 +322,45 @@ def test_remove_cancel_keeps_profile(tmp_path, capsys, monkeypatch):
     assert ProfileStore(store_path).get("lab") is not None
 
 
+def test_remove_confirmation_can_quit(tmp_path, capsys, monkeypatch):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(json.dumps({"env": {}}), encoding="utf-8")
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+    run(common_args + ["add-api", "lab", "--api-key", "sk-demo-lab-abcd"])
+    capsys.readouterr()
+
+    monkeypatch.setattr("builtins.input", lambda _prompt: "q")
+    assert run(common_args + ["remove", "lab"]) == 1
+    assert "Cancelled." in capsys.readouterr().err
+    assert ProfileStore(store_path).get("lab") is not None
+
+
+def test_interactive_add_can_quit_mid_flow(tmp_path, capsys, monkeypatch):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(json.dumps({"env": {}}), encoding="utf-8")
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+    answers = iter(["lab", "q"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+
+    assert run(common_args + ["add"]) == 1
+    output = capsys.readouterr()
+    assert "Add MiMo profile" in output.out
+    assert "Cancelled." in output.err
+    assert list(ProfileStore(store_path).list_profiles()) == []
+
+
 def test_check_all_profiles_masks_keys_and_reports_failures(
     tmp_path,
     capsys,

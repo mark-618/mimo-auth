@@ -160,7 +160,7 @@ def command_add(args: argparse.Namespace, store: ProfileStore) -> int:
     profile_type = args.type or prompt_profile_type()
     base_url = args.base_url or default_base_url(profile_type)
     name = args.name or prompt_default("Display name", alias)
-    api_key = args.api_key or getpass.getpass("MiMo API key: ")
+    api_key = args.api_key or prompt_secret("MiMo API key")
     saved_alias = save_profile(
         store,
         alias=alias,
@@ -178,7 +178,7 @@ def command_add(args: argparse.Namespace, store: ProfileStore) -> int:
 
 
 def command_add_api(args: argparse.Namespace, store: ProfileStore) -> int:
-    api_key = args.api_key or getpass.getpass("MiMo API key: ")
+    api_key = args.api_key or prompt_secret("MiMo API key")
     save_profile(
         store,
         alias=args.alias,
@@ -193,7 +193,7 @@ def command_add_api(args: argparse.Namespace, store: ProfileStore) -> int:
 
 
 def command_add_token(args: argparse.Namespace, store: ProfileStore) -> int:
-    api_key = args.api_key or getpass.getpass("MiMo Token Plan key: ")
+    api_key = args.api_key or prompt_secret("MiMo Token Plan key")
     save_profile(
         store,
         alias=args.alias,
@@ -543,13 +543,17 @@ def default_base_url(profile_type: str) -> str:
 
 def prompt_required(label: str) -> str:
     while True:
-        value = input(f"{label}: ").strip()
+        value = input(f"{label} [q]: ").strip()
+        if is_quit(value):
+            raise KeyboardInterrupt
         if value:
             return value
 
 
 def prompt_default(label: str, default: str) -> str:
-    value = input(f"{label} [{default}]: ").strip()
+    value = input(f"{label} [{default}, q]: ").strip()
+    if is_quit(value):
+        raise KeyboardInterrupt
     return value or default
 
 
@@ -557,12 +561,22 @@ def prompt_profile_type() -> str:
     print("Credential type:")
     print("  1. Token Plan")
     print("  2. Pay-as-you-go API")
-    value = input("Choose [1]: ").strip() or "1"
+    value = input("Choose [1, q]: ").strip()
+    if is_quit(value):
+        raise KeyboardInterrupt
+    value = value or "1"
     if value in {"1", "token", "token-plan"}:
         return "token-plan"
     if value in {"2", "api"}:
         return "api"
     raise ValueError("type must be one of: api, token-plan")
+
+
+def prompt_secret(label: str) -> str:
+    value = getpass.getpass(f"{label} [q]: ").strip()
+    if is_quit(value):
+        raise KeyboardInterrupt
+    return value
 
 
 def compact_url(url: str) -> str:
@@ -594,11 +608,17 @@ def pick_profile(
 
 
 def prompt_yes_no(label: str, default: bool) -> bool:
-    suffix = " [Y/n]: " if default else " [y/N]: "
+    suffix = " [Y/n/q]: " if default else " [y/N/q]: "
     value = input(label + suffix).strip().lower()
+    if is_quit(value):
+        raise KeyboardInterrupt
     if not value:
         return default
     return value in {"y", "yes"}
+
+
+def is_quit(value: str) -> bool:
+    return value.lower() in {"q", "quit"}
 
 
 def run(argv: Optional[list[str]] = None) -> int:
