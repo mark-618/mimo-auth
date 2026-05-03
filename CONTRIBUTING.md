@@ -47,6 +47,20 @@ python -m pip install build
 python -m build
 ```
 
+## Release Checklist
+
+For maintainers:
+
+1. Confirm the worktree is clean.
+2. Run `pytest`.
+3. Run `python -m build`.
+4. Update `CHANGELOG.md`.
+5. Update `pyproject.toml` and `src/mimo_auth/__init__.py` if the version changes.
+6. Commit the release changes.
+7. Create and push a tag, for example `git tag -a v0.1.1 -m "mimo-auth v0.1.1"`.
+8. Create a GitHub Release from the tag and paste the relevant changelog section.
+9. Watch GitHub Actions for the release commit and tag.
+
 ## Pull Requests
 
 Before opening a PR:

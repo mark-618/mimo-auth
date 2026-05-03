@@ -9,6 +9,18 @@
 
 It is inspired by `codex-auth`, but intentionally smaller in scope: it manages multiple local MiMo API / Token Plan profiles and switches the MiMo credentials used by Claude Code with one command.
 
+## 中文简介
+
+`mimo-auth` 是一个面向 Claude Code 的小米 MiMo 本地认证切换器。
+
+它用来管理多个 MiMo API / Token Plan profile，并通过一条命令切换 Claude Code 当前使用的 MiMo 配置。它只修改本地 `~/.claude/settings.json` 里的 `ANTHROPIC_BASE_URL` 和 `ANTHROPIC_AUTH_TOKEN`，切换前会自动备份；不上传 key、不做代理、不做 telemetry、不抓 Cookie、不绕过登录。
+
+推荐安装：
+
+```bash
+pipx install git+https://github.com/mark-618/mimo-auth.git
+```
+
 ## What It Is
 
 `mimo-auth` is:
