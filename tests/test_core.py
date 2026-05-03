@@ -180,6 +180,7 @@ def test_cli_masks_api_key_in_outputs(tmp_path, capsys):
         ["show", "main"],
         ["switch", "main"],
         ["current"],
+        ["status"],
         ["doctor"],
     ]
     for command in command_args:
@@ -239,6 +240,64 @@ def test_short_add_commands_and_numeric_use(tmp_path, capsys):
     assert run(common_args + ["use", "main"]) == 0
     settings = json.loads(settings_path.read_text(encoding="utf-8"))
     assert settings["env"]["ANTHROPIC_BASE_URL"] == API_BASE_URL
+
+
+def test_status_edit_and_rename(tmp_path, capsys):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(json.dumps({"env": {}}), encoding="utf-8")
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+    run(common_args + ["add-api", "lab", "--api-key", "sk-demo-lab-abcd"])
+    run(common_args + ["use", "lab"])
+    capsys.readouterr()
+
+    assert run(common_args + ["status"]) == 0
+    output = capsys.readouterr().out
+    assert "mimo-auth status" in output
+    assert "State: synced" in output
+    assert "sk-****abcd" in output
+    assert "sk-demo-lab-abcd" not in output
+
+    assert run(common_args + ["rename", "lab", "work"]) == 0
+    output = capsys.readouterr().out
+    assert "Renamed 'lab' -> 'work'." in output
+    store = ProfileStore(store_path)
+    assert store.get("lab") is None
+    assert store.get("work") is not None
+    assert store.get_active_alias() == "work"
+
+    assert run(
+        common_args
+        + [
+            "edit",
+            "work",
+            "--name",
+            "MiMo Work",
+            "--type",
+            "token-plan",
+            "--base-url",
+            "https://custom.example.com/anthropic",
+            "--default-model",
+            "mimo-custom",
+            "--api-key",
+            "tp-demo-work-9999",
+        ]
+    ) == 0
+    output = capsys.readouterr().out
+    assert "Updated profile 'work'." in output
+    profile = ProfileStore(store_path).get("work")
+    assert profile is not None
+    assert profile.name == "MiMo Work"
+    assert profile.type == "token-plan"
+    assert profile.base_url == "https://custom.example.com/anthropic"
+    assert profile.default_model == "mimo-custom"
+    assert profile.api_key == "tp-demo-work-9999"
+    assert "tp-demo-work-9999" not in output
 
 
 def test_switch_picker_and_fragment_selector(tmp_path, capsys, monkeypatch):
@@ -301,6 +360,33 @@ def test_remove_direct_and_picker(tmp_path, capsys, monkeypatch):
     store = ProfileStore(store_path)
     assert store.get("work") is None
     assert store.get_active_alias() is None
+
+
+def test_remove_picker_accepts_space_separated_multi_select(tmp_path, capsys, monkeypatch):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(json.dumps({"env": {}}), encoding="utf-8")
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+    run(common_args + ["add-api", "lab", "--api-key", "sk-demo-lab-abcd"])
+    run(common_args + ["add-token", "personal", "--api-key", "tp-demo-personal-5678"])
+    run(common_args + ["add-token", "work", "--api-key", "tp-demo-work-1234"])
+    capsys.readouterr()
+
+    answers = iter(["1 3", "y"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+    assert run(common_args + ["remove"]) == 0
+    output = capsys.readouterr().out
+    assert "Removed profile 'lab'." in output
+    assert "Removed profile 'work'." in output
+    store = ProfileStore(store_path)
+    assert store.get("lab") is None
+    assert store.get("work") is None
+    assert store.get("personal") is not None
 
 
 def test_remove_cancel_keeps_profile(tmp_path, capsys, monkeypatch):

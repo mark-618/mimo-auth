@@ -135,6 +135,12 @@ Show the currently active profile:
 mimo-auth current
 ```
 
+Show local profile and Claude Code sync status:
+
+```bash
+mimo-auth status
+```
+
 Test whether stored credentials can call MiMo:
 
 ```bash
@@ -162,7 +168,26 @@ mimo-auth remove me-plan
 mimo-auth remove 2 --yes
 ```
 
+`remove` opens a multi-select picker when no alias is passed. Select rows with spaces:
+
+```text
+Remove profiles [1 3, all, q]: 1 3
+```
+
 In interactive pickers and confirmation prompts, type `q` or `quit` to cancel.
+
+Edit a profile:
+
+```bash
+mimo-auth edit me-plan
+mimo-auth edit me-plan --name "MiMo Work" --default-model mimo-v2.5-pro
+```
+
+Rename a profile alias:
+
+```bash
+mimo-auth rename old-alias new-alias
+```
 
 ## Interactive Add
 
@@ -217,8 +242,11 @@ mimo-auth show <alias|number|fragment>
 mimo-auth switch [alias|number|fragment]
 mimo-auth use [alias|number|fragment]
 mimo-auth current
+mimo-auth status
 mimo-auth check [alias|number|fragment]
 mimo-auth remove [alias|number|fragment]
+mimo-auth edit [alias|number|fragment]
+mimo-auth rename <old-alias> <new-alias>
 mimo-auth doctor
 ```
 

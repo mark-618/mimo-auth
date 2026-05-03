@@ -16,7 +16,7 @@ from .claude import (
     apply_profile,
     read_current_env,
 )
-from .models import Profile, mask_api_key, validate_profile_type
+from .models import Profile, mask_api_key, utc_now_iso, validate_profile_type
 from .models import API_BASE_URL, DEFAULT_MODEL, TOKEN_PLAN_BASE_URL
 from .store import DEFAULT_STORE_PATH, ProfileStore
 
@@ -129,6 +129,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show masked current settings even when no profile matches.",
     )
 
+    subparsers.add_parser("status", help="Show mimo-auth and Claude Code status.")
+
     remove_parser = subparsers.add_parser("remove", help="Remove a profile.")
     remove_parser.add_argument("alias", nargs="?")
     remove_parser.add_argument(
@@ -137,6 +139,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Remove without confirmation.",
     )
+
+    edit_parser = subparsers.add_parser("edit", help="Edit a profile.")
+    edit_parser.add_argument("alias", nargs="?")
+    edit_parser.add_argument("--name")
+    edit_parser.add_argument("--type", choices=["api", "token-plan"])
+    edit_parser.add_argument("--base-url")
+    edit_parser.add_argument("--api-key")
+    edit_parser.add_argument("--default-model")
+
+    rename_parser = subparsers.add_parser("rename", help="Rename a profile alias.")
+    rename_parser.add_argument("old_alias")
+    rename_parser.add_argument("new_alias")
 
     check_parser = subparsers.add_parser(
         "check",
@@ -359,26 +373,134 @@ def command_current(args: argparse.Namespace, store: ProfileStore) -> int:
     return 1
 
 
+def command_status(args: argparse.Namespace, store: ProfileStore) -> int:
+    profiles = list(store.list_profiles())
+    active_alias = store.get_active_alias()
+    active_profile = store.get(active_alias) if active_alias else None
+    try:
+        current = read_current_env(args.settings_path)
+        matched = find_matching_profile(profiles, current)
+        settings_error = None
+    except SettingsError as exc:
+        current = {}
+        matched = None
+        settings_error = str(exc)
+
+    print(style("mimo-auth status", "bold"))
+    print_key_value("Profile store", str(store.path), "bright_blue")
+    print_key_value("Profiles", str(len(profiles)), "bright_magenta")
+    print_key_value("Claude settings", str(args.settings_path), "bright_blue")
+    if settings_error:
+        print_key_value("Settings", settings_error, "bright_red")
+        return 1
+
+    if active_profile:
+        print_key_value("Active alias", active_profile.alias, "bright_cyan")
+        print_key_value("Active type", active_profile.type, profile_type_color(active_profile.type))
+        print_key_value("Active model", active_profile.default_model, "bright_blue")
+    elif active_alias:
+        print_key_value("Active alias", f"{active_alias} (missing)", "bright_red")
+    else:
+        print_key_value("Active alias", "not set", "bright_yellow")
+
+    if matched:
+        print_key_value("Claude profile", matched.alias, "bright_cyan")
+        state = "synced" if active_profile and matched.alias == active_profile.alias else "settings differ"
+        print_key_value("State", state, "bright_green" if state == "synced" else "bright_yellow")
+    else:
+        print_key_value("Claude profile", "no matching profile", "bright_yellow")
+        print_key_value("State", "settings differ", "bright_yellow")
+
+    print_key_value("ANTHROPIC_BASE_URL", current.get("ANTHROPIC_BASE_URL") or "", "green")
+    token = current.get("ANTHROPIC_AUTH_TOKEN") or ""
+    print_key_value("ANTHROPIC_AUTH_TOKEN", mask_api_key(token) if token else "", "bright_yellow")
+    return 0
+
+
 def command_remove(args: argparse.Namespace, store: ProfileStore) -> int:
-    profile = (
-        pick_profile(args, store, prompt="Remove profile")
-        if args.alias is None
-        else resolve_profile(store, args.alias)
+    profiles = (
+        [resolve_profile(store, args.alias)]
+        if args.alias is not None
+        else pick_profiles_for_remove(args, store)
     )
+    if not profiles:
+        print("Cancelled.")
+        return 1
+    label = ", ".join(profile.alias for profile in profiles)
     if not args.yes and not prompt_yes_no(
-        f"Remove profile '{profile.alias}' ({profile.name})?",
+        f"Remove {len(profiles)} profile(s): {label}?",
         default=False,
     ):
         print("Cancelled.")
         return 1
-    if store.remove(profile.alias):
-        print(
-            f"{style('Removed', 'bright_red')} profile "
-            f"{style(repr(profile.alias), 'bright_cyan')}."
-        )
-        return 0
-    print(f"Profile '{args.alias}' not found.", file=sys.stderr)
-    return 1
+    removed = []
+    for profile in profiles:
+        if store.remove(profile.alias):
+            removed.append(profile.alias)
+    for alias in removed:
+        print(f"{style('Removed', 'bright_red')} profile {style(repr(alias), 'bright_cyan')}.")
+    return 0 if removed else 1
+
+
+def command_edit(args: argparse.Namespace, store: ProfileStore) -> int:
+    profile = pick_profile(args, store, prompt="Edit profile") if args.alias is None else resolve_profile(store, args.alias)
+    interactive = not any(
+        value is not None
+        for value in [args.name, args.type, args.base_url, args.api_key, args.default_model]
+    )
+    if interactive:
+        print_profile(profile)
+        name = prompt_default("Display name", profile.name)
+        profile_type = prompt_profile_type(default=profile.type)
+        base_default = profile.base_url if profile_type == profile.type else default_base_url(profile_type)
+        base_url = prompt_default("Base URL", base_default)
+        default_model = prompt_default("Default model", profile.default_model)
+        api_key = prompt_secret_optional("MiMo API key", profile.api_key)
+    else:
+        name = args.name if args.name is not None else profile.name
+        profile_type = args.type if args.type is not None else profile.type
+        base_url = args.base_url if args.base_url is not None else profile.base_url
+        api_key = args.api_key if args.api_key is not None else profile.api_key
+        default_model = args.default_model if args.default_model is not None else profile.default_model
+    validate_profile_type(profile_type)
+    updated = profile.with_updates(
+        name=name,
+        profile_type=profile_type,
+        base_url=base_url,
+        api_key=api_key,
+        default_model=default_model,
+    )
+    store.upsert(updated)
+    print(f"{style('Updated', 'bright_green')} profile {style(repr(updated.alias), 'bright_cyan')}.")
+    print_compact_profile_summary(updated)
+    return 0
+
+
+def command_rename(args: argparse.Namespace, store: ProfileStore) -> int:
+    old_profile = require_profile(store, args.old_alias)
+    if store.get(args.new_alias):
+        raise ValueError(f"Profile '{args.new_alias}' already exists.")
+    profiles = store.load()
+    renamed = Profile(
+        alias=args.new_alias,
+        name=old_profile.name,
+        type=old_profile.type,
+        base_url=old_profile.base_url,
+        api_key=old_profile.api_key,
+        default_model=old_profile.default_model,
+        created_at=old_profile.created_at,
+        updated_at=utc_now_iso(),
+    )
+    del profiles[old_profile.alias]
+    profiles[renamed.alias] = renamed
+    active_alias = store.get_active_alias()
+    store.save(profiles, renamed.alias if active_alias == old_profile.alias else active_alias)
+    print(
+        f"{style('Renamed', 'bright_green')} "
+        f"{style(repr(old_profile.alias), 'bright_black')} -> "
+        f"{style(repr(renamed.alias), 'bright_cyan')}."
+    )
+    return 0
 
 
 def command_doctor(args: argparse.Namespace, store: ProfileStore) -> int:
@@ -630,16 +752,18 @@ def prompt_default(label: str, default: str) -> str:
     return value or default
 
 
-def prompt_profile_type() -> str:
+def prompt_profile_type(default: str = "token-plan") -> str:
     print(style("Credential type:", "bold"))
     print(f"  {style('1', 'bright_magenta')}. {style('Token Plan', 'bright_magenta')}")
     print(f"  {style('2', 'bright_blue')}. {style('Pay-as-you-go API', 'bright_blue')}")
+    default_choice = "2" if default == "api" else "1"
     value = input(
-        f"{style('Choose', 'bright_cyan')} {style('[1, q]', 'bright_black')}: "
+        f"{style('Choose', 'bright_cyan')} "
+        f"{style('[' + default_choice + ', q]', 'bright_black')}: "
     ).strip()
     if is_quit(value):
         raise KeyboardInterrupt
-    value = value or "1"
+    value = value or default_choice
     if value in {"1", "token", "token-plan"}:
         return "token-plan"
     if value in {"2", "api"}:
@@ -652,6 +776,13 @@ def prompt_secret(label: str) -> str:
     if is_quit(value):
         raise KeyboardInterrupt
     return value
+
+
+def prompt_secret_optional(label: str, current: str) -> str:
+    value = getpass.getpass(f"{label} [keep/q]: ").strip()
+    if is_quit(value):
+        raise KeyboardInterrupt
+    return value or current
 
 
 def compact_url(url: str) -> str:
@@ -683,6 +814,44 @@ def pick_profile(
             return resolve_profile(store, selector)
         except KeyError as exc:
             print(str(exc), file=sys.stderr)
+
+
+def pick_profiles_for_remove(args: argparse.Namespace, store: ProfileStore) -> list[Profile]:
+    profiles = sorted(store.list_profiles(), key=lambda profile: profile.alias)
+    if not profiles:
+        raise KeyError("No profiles found.")
+    active_alias = active_alias_for_list(args, store)
+    print_profile_table(profiles, active_alias)
+    print()
+    while True:
+        selector = input(
+            f"{style('Remove profiles', 'bright_cyan')} "
+            f"{style('[1 3, all, q]', 'bright_black')}: "
+        ).strip()
+        if is_quit(selector):
+            raise KeyboardInterrupt
+        if selector.lower() == "all":
+            return profiles
+        try:
+            indexes = [int(item) for item in selector.replace(",", " ").split()]
+        except ValueError:
+            print("Use row numbers separated by spaces, 'all', or 'q'.", file=sys.stderr)
+            continue
+        selected = []
+        invalid = []
+        seen = set()
+        for index in indexes:
+            if 1 <= index <= len(profiles):
+                if index not in seen:
+                    selected.append(profiles[index - 1])
+                    seen.add(index)
+            else:
+                invalid.append(str(index))
+        if invalid:
+            print(f"Profile row(s) not found: {', '.join(invalid)}", file=sys.stderr)
+            continue
+        if selected:
+            return selected
 
 
 def prompt_yes_no(label: str, default: bool) -> bool:
@@ -718,8 +887,14 @@ def run(argv: Optional[list[str]] = None) -> int:
             return command_switch(args, store)
         if args.command == "current":
             return command_current(args, store)
+        if args.command == "status":
+            return command_status(args, store)
         if args.command == "remove":
             return command_remove(args, store)
+        if args.command == "edit":
+            return command_edit(args, store)
+        if args.command == "rename":
+            return command_rename(args, store)
         if args.command == "check":
             return command_check(args, store)
         if args.command == "doctor":
