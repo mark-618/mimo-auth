@@ -140,7 +140,17 @@ mimo-auth check
 mimo-auth check me-plan
 ```
 
-`check` sends a minimal real API request only when you run it. It may consume a tiny amount of quota.
+`check` sends a minimal real API request only when you run it. It may consume a tiny amount of quota. Failed checks include a short explanation:
+
+```text
+Checking me-plan (token-plan, tp-****abcd) ...
+  FAILED (HTTP 401)
+  Reason: Authentication failed. Check whether the API key/token is correct and still active.
+
+Checking me-bal (api, sk-****wxyz) ...
+  FAILED (HTTP 402)
+  Reason: Payment or quota required. Check account balance, billing status, or Token Plan quota.
+```
 
 Remove a profile:
 
@@ -237,6 +247,7 @@ Each profile contains:
 - `mimo-auth` does not proxy traffic.
 - `mimo-auth` only edits local files.
 - `mimo-auth check` is the only command that sends a MiMo API request.
+- `mimo-auth check` never prints the full API key, even when the request fails.
 
 ## Development
 

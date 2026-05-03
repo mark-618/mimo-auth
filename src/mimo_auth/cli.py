@@ -363,8 +363,11 @@ def command_check(args: argparse.Namespace, store: ProfileStore) -> int:
             print("  OK")
         else:
             failures += 1
-            status = f"HTTP {result.status}" if result.status is not None else result.message
-            print(f"  FAILED ({status})")
+            if result.status is None:
+                print("  FAILED")
+            else:
+                print(f"  FAILED (HTTP {result.status})")
+            print(f"  Reason: {result.message}")
     return 1 if failures else 0
 
 

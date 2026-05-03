@@ -42,9 +42,9 @@ def check_profile(profile: Profile, *, model: str, timeout: float) -> CheckResul
             status = response.getcode()
         if 200 <= status < 300:
             return CheckResult(True, status, "OK")
-        return CheckResult(False, status, f"HTTP {status}")
+        return CheckResult(False, status, explain_http_status(status))
     except urllib.error.HTTPError as exc:
-        return CheckResult(False, exc.code, f"HTTP {exc.code}")
+        return CheckResult(False, exc.code, explain_http_status(exc.code))
     except urllib.error.URLError as exc:
         return CheckResult(False, None, str(exc.reason))
     except TimeoutError:
@@ -52,3 +52,20 @@ def check_profile(profile: Profile, *, model: str, timeout: float) -> CheckResul
     except Exception as exc:
         return CheckResult(False, None, exc.__class__.__name__)
 
+
+def explain_http_status(status: int) -> str:
+    if status == 400:
+        return "Bad request. Check the model name, endpoint URL, and request compatibility."
+    if status == 401:
+        return "Authentication failed. Check whether the API key/token is correct and still active."
+    if status == 402:
+        return "Payment or quota required. Check account balance, billing status, or Token Plan quota."
+    if status == 403:
+        return "Permission denied. Check whether this key is allowed to use the selected MiMo endpoint/model."
+    if status == 404:
+        return "Endpoint not found. Check the base_url and make sure it points to the Anthropic-compatible MiMo endpoint."
+    if status == 429:
+        return "Rate limited or quota exhausted. Wait and retry, or check current quota limits."
+    if 500 <= status < 600:
+        return "MiMo server error. Retry later; if it persists, check MiMo platform status or support."
+    return "Unexpected HTTP response. Check the profile endpoint, key, model, and MiMo account status."

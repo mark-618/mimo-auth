@@ -345,7 +345,11 @@ def test_check_all_profiles_masks_keys_and_reports_failures(
         assert timeout == 15.0
         if profile.alias == "lab":
             return CheckResult(True, 200, "OK")
-        return CheckResult(False, 401, "HTTP 401")
+        return CheckResult(
+            False,
+            401,
+            "Authentication failed. Check whether the API key/token is correct and still active.",
+        )
 
     monkeypatch.setattr("mimo_auth.cli.check_profile", fake_check)
 
@@ -355,8 +359,37 @@ def test_check_all_profiles_masks_keys_and_reports_failures(
     assert "Checking work" in output
     assert "OK" in output
     assert "FAILED (HTTP 401)" in output
+    assert "Reason: Authentication failed" in output
     assert "sk-demo-lab-abcd" not in output
     assert "tp-demo-work-1234" not in output
+
+
+def test_check_explains_payment_or_quota_failures(tmp_path, capsys, monkeypatch):
+    store_path = tmp_path / "profiles.json"
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(json.dumps({"env": {}}), encoding="utf-8")
+    common_args = [
+        "--store-path",
+        str(store_path),
+        "--settings-path",
+        str(settings_path),
+    ]
+    run(common_args + ["add-api", "lab", "--api-key", "sk-demo-lab-abcd"])
+    capsys.readouterr()
+    monkeypatch.setattr(
+        "mimo_auth.cli.check_profile",
+        lambda profile, *, model, timeout: CheckResult(
+            False,
+            402,
+            "Payment or quota required. Check account balance, billing status, or Token Plan quota.",
+        ),
+    )
+
+    assert run(common_args + ["check", "lab"]) == 1
+    output = capsys.readouterr().out
+    assert "FAILED (HTTP 402)" in output
+    assert "Reason: Payment or quota required" in output
+    assert "sk-demo-lab-abcd" not in output
 
 
 def test_check_single_profile_success(tmp_path, capsys, monkeypatch):
