@@ -7,19 +7,27 @@
 
 `mimo-auth` is a local Xiaomi MiMo auth profile switcher for Claude Code.
 
-It is inspired by `codex-auth`, but intentionally smaller in scope: it manages multiple local MiMo API / Token Plan profiles and switches the MiMo credentials used by Claude Code with one command.
-
 ## 中文简介
 
 `mimo-auth` 是一个面向 Claude Code 的小米 MiMo 本地认证切换器。
 
 它用来管理多个 MiMo API / Token Plan profile，并通过一条命令切换 Claude Code 当前使用的 MiMo 配置。它只修改本地 `~/.claude/settings.json` 里的 `ANTHROPIC_BASE_URL` 和 `ANTHROPIC_AUTH_TOKEN`，切换前会自动备份；不上传 key、不做代理、不做 telemetry、不抓 Cookie、不绕过登录。
 
-推荐安装：
+## Quick Start
 
 ```bash
 pipx install git+https://github.com/mark-618/mimo-auth.git
+
+mimo-auth add-token work
+mimo-auth switch work
+mimo-auth status
+mimo-auth check
 ```
+
+`status` checks the local profile store and Claude Code sync state.
+`check` sends a minimal real MiMo request to validate the active credential.
+
+If no key is passed, `mimo-auth` prompts for it without echoing input.
 
 ## What It Is
 
@@ -40,14 +48,6 @@ pipx install git+https://github.com/mark-618/mimo-auth.git
 - a login bypass tool
 
 Version `0.1.0` only supports Claude Code. It does not export settings for Cursor, Zed, Continue, Cherry Studio, or other clients.
-
-## Official MiMo Docs
-
-Create and manage your MiMo API / Token Plan credentials from the official Xiaomi MiMo API Open Platform:
-
-[https://platform.xiaomimimo.com/docs/en-US/welcome](https://platform.xiaomimimo.com/docs/en-US/welcome)
-
-`mimo-auth` only stores and switches credentials locally. It does not create accounts, fetch cookies, or bypass any login flow.
 
 ## What It Changes
 
@@ -82,6 +82,22 @@ Profiles are stored locally at:
 
 The profile store is written with file mode `0600`.
 
+## `doctor` vs `check`
+
+Use `doctor` when you want to inspect local setup only.
+Use `check` when you want to validate whether a MiMo profile can actually call the API.
+
+`doctor` checks local files, profile storage, Claude Code settings, and sync state.
+`check` sends a minimal real MiMo request and may consume a tiny amount of quota.
+
+## Official MiMo Docs
+
+Create and manage your MiMo API / Token Plan credentials from the official Xiaomi MiMo API Open Platform:
+
+[https://platform.xiaomimimo.com/docs/en-US/welcome](https://platform.xiaomimimo.com/docs/en-US/welcome)
+
+`mimo-auth` only stores and switches credentials locally. It does not create accounts, fetch cookies, or bypass any login flow.
+
 ## Install
 
 Recommended CLI install:
@@ -104,61 +120,30 @@ cd mimo-auth
 python -m pip install -e .
 ```
 
-Verify the CLI:
+Verify the CLI and local setup:
 
 ```bash
 mimo-auth doctor
 ```
 
-`mimo-auth` uses colored output in an interactive terminal. Status text, profile aliases, profile types, masked keys, URLs, models, and local paths use different colors so `add`, `show`, `switch`, `doctor`, `check`, and `list` are easier to scan. Output stays plain text when piped, captured, or when `NO_COLOR` is set. You can override this with `MIMO_AUTH_COLOR=always` or `MIMO_AUTH_COLOR=never`.
+Validate your active MiMo credential:
 
-## Terminal Demo
-
-```console
-$ mimo-auth add
-Add MiMo profile
-
-Profile alias [q]: work
-Credential type:
-  1. Token Plan
-  2. Pay-as-you-go API
-Choose [1, q]: 1
-Display name [work, q]:
-Default model:
-  1. mimo-v2.5-pro - Pro Series, 1M context
-  2. mimo-v2-pro - Pro Series, 1M context
-  3. mimo-v2.5 - Omni Series, 1M context
-  4. mimo-v2-omni - Omni Series, 256K context
-  5. mimo-v2-flash - Flash Series, 256K context
-Choose model [1, q]:
-MiMo Token Plan key [q]:
-Added profile 'work' (work).
-  type=token-plan  model=mimo-v2.5-pro  key=tp-****abcd
-Use it for Claude Code now? [Y/n/q]: y
-Claude Code now uses 'work' (work).
-Backup: /Users/you/.claude/mimo-auth-backups/settings.2026-05-03T12-00-00+00-00.json
-ANTHROPIC_BASE_URL=https://token-plan-cn.xiaomimimo.com/anthropic
-ANTHROPIC_AUTH_TOKEN=tp-****abcd
-
-$ mimo-auth list
-ACTIVE  ID  ALIAS  TYPE        NAME  BASE_URL          KEY          MODEL
-*       1   work   token-plan  work  token-plan-cn...  tp-****abcd  mimo-v2.5-pro
-
-$ mimo-auth status
-mimo-auth status
-Profile store: /Users/you/.mimo-auth/profiles.json
-Profiles: 1
-Claude settings: /Users/you/.claude/settings.json
-Active alias: work
-Active type: token-plan
-Active model: mimo-v2.5-pro
-Claude profile: work
-State: synced
-ANTHROPIC_BASE_URL: https://token-plan-cn.xiaomimimo.com/anthropic
-ANTHROPIC_AUTH_TOKEN: tp-****abcd
+```bash
+mimo-auth check
 ```
 
-## Quick Start
+`mimo-auth` uses colored output in an interactive terminal. Status text, profile aliases, profile types, masked keys, URLs, models, and local paths use different colors so `add`, `show`, `switch`, `doctor`, `check`, and `list` are easier to scan. Output stays plain text when piped, captured, or when `NO_COLOR` is set. You can override this with `MIMO_AUTH_COLOR=always` or `MIMO_AUTH_COLOR=never`.
+
+## Most users only need
+
+```bash
+mimo-auth add-token work
+mimo-auth switch work
+mimo-auth status
+mimo-auth check
+```
+
+## Commands / Usage
 
 Add a Token Plan profile:
 
@@ -352,6 +337,52 @@ Each profile contains:
 - `default_model`
 - `created_at`
 - `updated_at`
+
+## Terminal Demo
+
+```console
+$ mimo-auth add
+Add MiMo profile
+
+Profile alias [q]: work
+Credential type:
+  1. Token Plan
+  2. Pay-as-you-go API
+Choose [1, q]: 1
+Display name [work, q]:
+Default model:
+  1. mimo-v2.5-pro - Pro Series, 1M context
+  2. mimo-v2-pro - Pro Series, 1M context
+  3. mimo-v2.5 - Omni Series, 1M context
+  4. mimo-v2-omni - Omni Series, 256K context
+  5. mimo-v2-flash - Flash Series, 256K context
+Choose model [1, q]:
+MiMo Token Plan key [q]:
+Added profile 'work' (work).
+  type=token-plan  model=mimo-v2.5-pro  key=tp-****abcd
+Use it for Claude Code now? [Y/n/q]: y
+Claude Code now uses 'work' (work).
+Backup: /Users/you/.claude/mimo-auth-backups/settings.2026-05-03T12-00-00+00-00.json
+ANTHROPIC_BASE_URL=https://token-plan-cn.xiaomimimo.com/anthropic
+ANTHROPIC_AUTH_TOKEN=tp-****abcd
+
+$ mimo-auth list
+ACTIVE  ID  ALIAS  TYPE        NAME  BASE_URL          KEY          MODEL
+*       1   work   token-plan  work  token-plan-cn...  tp-****abcd  mimo-v2.5-pro
+
+$ mimo-auth status
+mimo-auth status
+Profile store: /Users/you/.mimo-auth/profiles.json
+Profiles: 1
+Claude settings: /Users/you/.claude/settings.json
+Active alias: work
+Active type: token-plan
+Active model: mimo-v2.5-pro
+Claude profile: work
+State: synced
+ANTHROPIC_BASE_URL: https://token-plan-cn.xiaomimimo.com/anthropic
+ANTHROPIC_AUTH_TOKEN: tp-****abcd
+```
 
 ## Security Notes
 
